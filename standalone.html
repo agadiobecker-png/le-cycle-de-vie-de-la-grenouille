@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L'Étang Magique : Le Cycle de Vie de la Grenouille</title>
+  <meta name="description" content="Jeu ludo-éducatif 2D interactif et autonome explorant la métamorphose complète de la grenouille dans un étang nocturne féerique.">
+
+  <!-- Tailwind CSS via CDN pour un rendu visuel immédiat sans configuration ni build -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pond: {
+              950: '#020617',
+              900: '#030d22',
+              800: '#071838',
+              700: '#0c2756'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Styles CSS complets intégrés (autonomes même sans connexion Internet) -->
+  <style>
+    /* Reset & variables de base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    :root {
+      --bg-dark: #020617;
+      --panel-bg: rgba(15, 23, 42, 0.92);
+      --border-emerald: rgba(16, 185, 129, 0.35);
+      --emerald-glow: #10b981;
+      --turquoise-glow: #06b6d4;
+      --amber-gold: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Halo lumineux ambiant */
+    .ambient-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 85% 20%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 85%, rgba(245, 158, 11, 0.10) 0%, transparent 55%);
+    }
+
+    /* Barre supérieure de navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      width: 100%;
+      background: rgba(2, 6, 23, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .header-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #6ee7b7;
+      letter-spacing: -0.025em;
+      white-space: nowrap;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.35rem 0.25rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+    }
+    .nav-btn:hover {
+      color: #ffffff;
+    }
+    .nav-btn.active {
+      color: #34d399;
+      border-bottom: 2px solid #34d399;
+    }
+    .audio-btn {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      color: #cbd5e1;
+      padding: 0.45rem 1rem;
+      border-radius: 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .audio-btn:hover {
+      background: #1e293b;
+      color: #ffffff;
+    }
+    .audio-btn.active {
+      background: rgba(6, 78, 59, 0.7);
+      border-color: rgba(16, 185, 129, 0.6);
+      color: #a7f3d0;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Conteneur principal */
+    main {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1.75rem 1.25rem;
+      width: 100%;
+    }
+
+    /* Bannière Hero */
+    .hero {
+      text-align: center;
+      margin-bottom: 2.25rem;
+    }
+    .hero-badge {
+      font-size: 0.75rem;
+      color: #34d399;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(6, 78, 59, 0.35);
+      padding: 0.3rem 0.85rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Cadre de l'étang interactif */
+    .pond-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-emerald);
+      border-radius: 1.25rem;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.85);
+      margin-bottom: 2rem;
+    }
+    .pond-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.25rem;
+      background: rgba(2, 6, 23, 0.95);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+      gap: 0.75rem;
+    }
+    .segmented-group {
+      display: flex;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 0.6rem;
+      padding: 0.25rem;
+      gap: 0.25rem;
+    }
+    .segmented-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.4rem 0.85rem;
+      border-radius: 0.45rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .segmented-btn:hover {
+      color: #ffffff;
+    }
+    .segmented-btn.active {
+      background: #059669;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+    }
+    .tool-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 0.45rem 0.9rem;
+      border-radius: 0.6rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s;
+    }
+    .tool-btn:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+    .tool-btn.active {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: rgba(245, 158, 11, 0.6);
+      color: #fde68a;
+    }
+
+    /* Scène de l'Étang & Vue en coupe */
+    .pond-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #020b18;
+      overflow: hidden;
+      user-select: none;
+    }
+    .pond-image-layer {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .waterline-split {
+      position: absolute;
+      top: 48%;
+      left: 0;
+      right: 0;
+      border-bottom: 1.5px dashed rgba(6, 182, 212, 0.5);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .waterline-label {
+      position: absolute;
+      top: -1.35rem;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(56, 189, 248, 0.9);
+      font-weight: 800;
+      background: rgba(2, 6, 23, 0.6);
+      padding: 0.1rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+
+    /* Balises interactives (Hotspots) */
+    .hotspot {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 25;
+      border: none;
+      background: none;
+      outline: none;
+      padding: 0;
+    }
+    .hotspot-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.35);
+      animation: pulseGlow 2.2s infinite;
+    }
+    .hotspot-disc {
+      position: relative;
+      width: 2.3rem;
+      height: 2.3rem;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2.5px solid #34d399;
+      color: #34d399;
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.6);
+      transition: transform 0.2s, background-color 0.2s, color 0.2s;
+    }
+    .hotspot:hover .hotspot-disc {
+      transform: scale(1.18);
+      background: #34d399;
+      color: #020617;
+    }
+    @keyframes pulseGlow {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      50% { transform: scale(1.5); opacity: 0; }
+      100% { transform: scale(0.85); opacity: 0; }
+    }
+
+    /* Bandeau d'étapes en bas */
+    .steps-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.6rem;
+      padding: 0.85rem 1.25rem;
+      background: #020617;
+      border-top: 1px solid #0f172a;
+    }
+    .step-tab {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid #1e293b;
+      border-radius: 0.65rem;
+      padding: 0.6rem 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #cbd5e1;
+    }
+    .step-tab:hover {
+      border-color: #34d399;
+      background: rgba(6, 78, 59, 0.3);
+      color: #ffffff;
+    }
+    .step-tab-num {
+      font-size: 0.68rem;
+      color: #64748b;
+      display: block;
+      font-weight: 600;
+    }
+    .step-tab-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Fenêtre modale d'inspection */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-window {
+      background: #0f172a;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      border-radius: 1.25rem;
+      max-width: 680px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      padding: 1.15rem 1.5rem;
+      background: #020617;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.35rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.35rem;
+      transition: all 0.15s;
+    }
+    .modal-close-btn:hover {
+      background: #1e293b;
+      color: #ffffff;
+    }
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    .spec-box {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 0.65rem;
+      padding: 0.85rem;
+      font-size: 0.825rem;
+    }
+    .spec-label {
+      color: #64748b;
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+    .secret-box {
+      background: rgba(6, 78, 59, 0.28);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 0.85rem;
+      padding: 1.15rem;
+      font-size: 0.85rem;
+      color: #a7f3d0;
+      line-height: 1.5;
+    }
+
+    /* Cartes de sections & Mini-Jeux */
+    .game-section {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-emerald);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.7);
+    }
+    .slots-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.85rem;
+      margin: 1.5rem 0;
+    }
+    .game-card {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 0.85rem;
+      padding: 1.15rem 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .game-card:hover {
+      border-color: #34d399;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.3);
+    }
+    .game-card.selected {
+      border-color: #34d399;
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.5);
+      background: rgba(6, 78, 59, 0.45);
+    }
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin: 1.25rem 0;
+    }
+    .quiz-btn {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 0.65rem;
+      padding: 0.85rem 1.15rem;
+      text-align: left;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      line-height: 1.4;
+    }
+    .quiz-btn:hover {
+      border-color: #38bdf8;
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    /* Pied de page */
+    footer {
+      border-top: 1px solid #1e293b;
+      padding: 1.75rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #64748b;
+      background: #020617;
+    }
+
+    /* Adaptabilité mobile */
+    @media (max-width: 768px) {
+      .steps-strip, .slots-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .spec-grid {
+        grid-template-columns: 1fr;
+      }
+      nav {
+        display: none;
+      }
+      .hero h1 {
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Barre de navigation supérieure -->
+  <header>
+    <div class="header-container">
+      <div class="brand-title" onclick="switchTab('pond')">
+        <span>🐸</span>
+        <span>L'Étang Magique</span>
+      </div>
+      <nav>
+        <button class="nav-btn active" id="nav-pond" onclick="switchTab('pond')">Étang Interactif</button>
+        <button class="nav-btn" id="nav-cycle" onclick="switchTab('cycle')">Cycle Biologique</button>
+        <button class="nav-btn" id="nav-puzzle" onclick="switchTab('puzzle')">Puzzle Métamorphose</button>
+        <button class="nav-btn" id="nav-quiz" onclick="switchTab('quiz')">Quiz Naturaliste</button>
+      </nav>
+      <button class="audio-btn" id="audioToggleBtn" onclick="toggleAmbience()">
+        <span id="audioIcon">🔈</span>
+        <span id="audioText">Ambiance Silencieuse</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenu Principal -->
+  <main>
+    <div class="hero">
+      <div class="hero-badge">🌙 JEU LUDO-ÉDUCATIF AUTONOME · CYCLE DE LA GRENOUILLE</div>
+      <h1>La Métamorphose de l'Étang Magique</h1>
+      <p>Explore la coupe transversale d'un étang féerique sous la lune : des œufs translucides sous l'eau jusqu'au chant de la grenouille adulte sur son grand nénuphar.</p>
+    </div>
+
+    <!-- VUE 1 : Scène de l'Étang Interactif -->
+    <div id="view-pond">
+      <div class="pond-card">
+        <div class="pond-toolbar">
+          <div class="segmented-group">
+            <button class="segmented-btn active" id="filter-all" onclick="setZoneFilter('all')">Vue Complète</button>
+            <button class="segmented-btn" id="filter-underwater" onclick="setZoneFilter('underwater')">Sous l'Eau</button>
+            <button class="segmented-btn" id="filter-surface" onclick="setZoneFilter('surface')">Surface & Berge</button>
+          </div>
+          <button class="tool-btn" id="obsModeBtn" onclick="toggleObservationMode()">
+            <span>🔍 Mode Observateur</span>
+          </button>
+        </div>
+
+        <!-- Scène visuelle : Image principale avec secours vectoriel SVG 100% autonome -->
+        <div class="pond-viewport" id="pondViewport" onclick="handlePondClick(event)">
+          <img 
+            src="/src/assets/images/frog_lifecycle_magical_pond_1792904187753.jpg" 
+            alt="Cycle de la grenouille dans un étang nocturne magique"
+            class="pond-image-layer"
+            onerror="this.style.display='none'; document.getElementById('svgPondFallback').style.display='block';"
+          />
+
+          <!-- Illustration vectorielle SVG autonome intégrée -->
+          <svg id="svgPondFallback" class="pond-image-layer" style="display: none;" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#020617"/>
+                <stop offset="60%" stop-color="#0f172a"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0e7490" stop-opacity="0.85"/>
+                <stop offset="40%" stop-color="#083344" stop-opacity="0.95"/>
+                <stop offset="100%" stop-color="#02141c"/>
+              </linearGradient>
+              <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#f8fafc" stop-opacity="1"/>
+                <stop offset="40%" stop-color="#38bdf8" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="eggGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.95"/>
+                <stop offset="60%" stop-color="#06b6d4" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#083344" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+
+            <!-- Ciel & Lune -->
+            <rect x="0" y="0" width="1600" height="450" fill="url(#skyGrad)"/>
+            <circle cx="1100" cy="110" r="70" fill="url(#moonGlow)"/>
+            <path d="M 1120 70 A 50 50 0 0 0 1080 150 A 42 42 0 1 1 1120 70 Z" fill="#f8fafc"/>
+            
+            <!-- Monde sous-marin -->
+            <rect x="0" y="430" width="1600" height="470" fill="url(#waterGrad)"/>
+
+            <!-- Ligne d'eau scintillante -->
+            <line x1="0" y1="430" x2="1600" y2="430" stroke="#38bdf8" stroke-width="4" stroke-opacity="0.75"/>
+            <path d="M 0 430 Q 400 422 800 430 T 1600 430" fill="none" stroke="#67e8f9" stroke-width="2.5" stroke-opacity="0.85"/>
+
+            <!-- Gauche sous l'eau : Herbiers & Grappe d'œufs -->
+            <path d="M 60 900 Q 120 600 140 460" stroke="#047857" stroke-width="8" fill="none"/>
+            <path d="M 100 900 Q 160 550 180 440" stroke="#065f46" stroke-width="7" fill="none"/>
+            <g transform="translate(220, 580)">
+              <circle cx="0" cy="0" r="60" fill="url(#eggGlow)"/>
+              <circle cx="-18" cy="-12" r="16" fill="#a5f3fc" opacity="0.85"/><circle cx="-18" cy="-12" r="4.5" fill="#020617"/>
+              <circle cx="18" cy="-16" r="16" fill="#a5f3fc" opacity="0.85"/><circle cx="18" cy="-16" r="4.5" fill="#020617"/>
+              <circle cx="0" cy="20" r="17" fill="#a5f3fc" opacity="0.85"/><circle cx="0" cy="20" r="5" fill="#020617"/>
+              <circle cx="-28" cy="18" r="14" fill="#a5f3fc" opacity="0.85"/><circle cx="-28" cy="18" r="4" fill="#020617"/>
+              <circle cx="28" cy="18" r="14" fill="#a5f3fc" opacity="0.85"/><circle cx="28" cy="18" r="4" fill="#020617"/>
+            </g>
+
+            <!-- Centre sous l'eau : Têtards nageurs -->
+            <g transform="translate(540, 680)">
+              <path d="M -20 0 Q -50 -10 -90 0 Q -50 10 -20 0" fill="#0284c7" opacity="0.75"/>
+              <ellipse cx="0" cy="0" rx="30" ry="22" fill="#0369a1"/>
+              <circle cx="12" cy="-6" r="4.5" fill="#f8fafc"/><circle cx="14" cy="-6" r="2.5" fill="#020617"/>
+            </g>
+            <g transform="translate(920, 640)">
+              <path d="M -30 0 Q -70 -12 -120 0 Q -70 12 -30 0" fill="#059669" opacity="0.75"/>
+              <ellipse cx="0" cy="0" rx="38" ry="26" fill="#10b981"/>
+              <circle cx="18" cy="-8" r="5" fill="#f8fafc"/><circle cx="20" cy="-8" r="2.5" fill="#020617"/>
+              <path d="M -15 12 L -30 35 L -18 45" stroke="#34d399" stroke-width="4.5" fill="none"/>
+              <path d="M -15 -12 L -30 -35 L -18 -45" stroke="#34d399" stroke-width="4.5" fill="none"/>
+            </g>
+
+            <!-- Rive à droite : Rocher moussé & Jeune grenette -->
+            <path d="M 1200 900 Q 1280 600 1600 500 L 1600 900 Z" fill="#1e293b"/>
+            <path d="M 1230 650 Q 1350 560 1550 520" stroke="#10b981" stroke-width="14" stroke-linecap="round" fill="none"/>
+            <g transform="translate(1360, 540)">
+              <path d="M -20 15 Q -50 25 -70 20" stroke="#34d399" stroke-width="6" fill="none"/>
+              <ellipse cx="0" cy="0" rx="30" ry="20" fill="#10b981" transform="rotate(-15)"/>
+              <circle cx="18" cy="-8" r="7.5" fill="#fbbf24"/><circle cx="20" cy="-8" r="4" fill="#020617"/>
+            </g>
+
+            <!-- Surface : Nénuphar & Grenouille adulte -->
+            <ellipse cx="1200" cy="380" rx="200" ry="55" fill="#059669"/>
+            <path d="M 1200 380 L 1380 370" stroke="#047857" stroke-width="3.5"/>
+            <path d="M 1340 370 Q 1360 330 1370 320 Q 1380 330 1400 370 Z" fill="#ffffff" opacity="0.95"/>
+            <circle cx="1370" cy="355" r="11" fill="#fde047"/>
+            <g transform="translate(1180, 310)">
+              <ellipse cx="0" cy="0" rx="52" ry="36" fill="#10b981"/>
+              <ellipse cx="6" cy="6" rx="32" ry="22" fill="#a7f3d0"/>
+              <circle cx="-26" cy="-22" r="13" fill="#fbbf24"/><circle cx="-26" cy="-22" r="6.5" fill="#020617"/>
+              <circle cx="16" cy="-24" r="13" fill="#fbbf24"/><circle cx="16" cy="-24" r="6.5" fill="#020617"/>
+              <path d="M 38 16 Q 65 28 54 48" stroke="#059669" stroke-width="8" fill="none"/>
+              <path d="M -22 22 Q -44 38 -32 48" stroke="#059669" stroke-width="7" fill="none"/>
+            </g>
+
+            <!-- Lucioles lumineuses -->
+            <circle cx="650" cy="180" r="6.5" fill="#fef08a" opacity="0.95"/>
+            <circle cx="820" cy="240" r="8.5" fill="#fef08a" opacity="0.95"/>
+            <circle cx="1020" cy="290" r="5.5" fill="#fef08a" opacity="0.85"/>
+            <circle cx="1450" cy="210" r="7.5" fill="#fef08a" opacity="0.95"/>
+          </svg>
+
+          <!-- Ligne de séparation de la surface -->
+          <div class="waterline-split">
+            <span class="waterline-label" style="left: 1.5rem;">Surface & Ciel Nocturne ↑</span>
+            <span class="waterline-label" style="right: 1.5rem;">↓ Monde Sous-Marin</span>
+          </div>
+
+          <!-- Repères cliquables (1 à 5) -->
+          <button class="hotspot" id="pin-1" style="left: 14%; top: 62%;" onclick="openStageModal(1)" title="Étape 1: Les Œufs">
+            <div class="hotspot-ring"></div>
+            <div class="hotspot-disc">1</div>
+          </button>
+
+          <button class="hotspot" id="pin-2" style="left: 34%; top: 74%;" onclick="openStageModal(2)" title="Étape 2: Le Têtard Nageur">
+            <div class="hotspot-ring"></div>
+            <div class="hotspot-disc">2</div>
+          </button>
+
+          <button class="hotspot" id="pin-3" style="left: 58%; top: 68%;" onclick="openStageModal(3)" title="Étape 3: Le Têtard à Pattes">
+            <div class="hotspot-ring"></div>
+            <div class="hotspot-disc">3</div>
+          </button>
+
+          <button class="hotspot" id="pin-4" style="left: 84%; top: 59%;" onclick="openStageModal(4)" title="Étape 4: La Grenouillette">
+            <div class="hotspot-ring"></div>
+            <div class="hotspot-disc">4</div>
+          </button>
+
+          <button class="hotspot" id="pin-5" style="left: 77%; top: 35%;" onclick="openStageModal(5)" title="Étape 5: La Grenouille Adulte">
+            <div class="hotspot-ring"></div>
+            <div class="hotspot-disc">5</div>
+          </button>
+        </div>
+
+        <!-- Onglets du bas : Les 5 Étapes -->
+        <div class="steps-strip">
+          <div class="step-tab" onclick="openStageModal(1)">
+            <span class="step-tab-num">Étape 1</span>
+            <span class="step-tab-title">1. Les Œufs</span>
+          </div>
+          <div class="step-tab" onclick="openStageModal(2)">
+            <span class="step-tab-num">Étape 2</span>
+            <span class="step-tab-title">2. Jeune Têtard</span>
+          </div>
+          <div class="step-tab" onclick="openStageModal(3)">
+            <span class="step-tab-num">Étape 3</span>
+            <span class="step-tab-title">3. Têtard à Pattes</span>
+          </div>
+          <div class="step-tab" onclick="openStageModal(4)">
+            <span class="step-tab-num">Étape 4</span>
+            <span class="step-tab-title">4. Grenouillette</span>
+          </div>
+          <div class="step-tab" onclick="openStageModal(5)">
+            <span class="step-tab-num">Étape 5</span>
+            <span class="step-tab-title">5. Grenouille Adulte</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE 2 : Détails du Cycle Biologique -->
+    <div id="view-cycle" style="display: none;">
+      <div class="game-section">
+        <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 1.25rem; color: #6ee7b7;">Les 5 Étapes de la Métamorphose</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;" id="cycleCardsContainer"></div>
+      </div>
+    </div>
+
+    <!-- VUE 3 : Puzzle de Chronologie -->
+    <div id="view-puzzle" style="display: none;">
+      <div class="game-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: #6ee7b7;">Puzzle : Reconstitue le Cycle Biologique</h2>
+            <p style="font-size: 0.85rem; color: #94a3b8;">Clique sur deux cartes consécutives pour inverser leur position et remettre le cycle dans l'ordre chronologique.</p>
+          </div>
+          <button class="tool-btn" onclick="initPuzzleGame()">🔄 Mélanger les cartes</button>
+        </div>
+        <div class="slots-container" id="puzzleSlots"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+          <div id="puzzleMessage" style="font-size: 0.9rem; font-weight: 600;"></div>
+          <button class="tool-btn" style="background: #059669; color: #fff; font-weight: 700; padding: 0.6rem 1.25rem;" onclick="verifyPuzzle()">Vérifier l'Ordre</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE 4 : Quiz du Naturaliste -->
+    <div id="view-quiz" style="display: none;">
+      <div class="game-section">
+        <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; color: #6ee7b7;">Quiz du Naturaliste de l'Étang</h2>
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.5rem;">5 questions interactives pour tester tes connaissances sur la métamorphose des amphibiens.</p>
+        <div id="quizContainer"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modale d'inspection d'une étape -->
+  <div class="modal-overlay" id="stageModal" onclick="closeStageModal(event)">
+    <div class="modal-window" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle" style="font-size: 1.2rem; font-weight: 800; color: #f8fafc;"></h3>
+          <span id="modalScientific" style="font-size: 0.78rem; color: #34d399; font-family: monospace;"></span>
+        </div>
+        <button class="modal-close-btn" onclick="closeStageModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="modalDesc" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.6;"></p>
+        <div class="spec-grid">
+          <div class="spec-box"><span class="spec-label">Durée moyenne</span><span id="modalDuration" style="color: #f1f5f9; font-weight: 600;"></span></div>
+          <div class="spec-box"><span class="spec-label">Habitat naturel</span><span id="modalHabitat" style="color: #f1f5f9; font-weight: 600;"></span></div>
+          <div class="spec-box"><span class="spec-label">Respiration</span><span id="modalResp" style="color: #f1f5f9; font-weight: 600;"></span></div>
+          <div class="spec-box"><span class="spec-label">Alimentation</span><span id="modalDiet" style="color: #f1f5f9; font-weight: 600;"></span></div>
+        </div>
+        <div class="secret-box">
+          <strong style="display: block; margin-bottom: 0.35rem; color: #6ee7b7;">💡 Le Savais-tu ?</strong>
+          <span id="modalSecret"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pied de page -->
+  <footer>
+    L'Étang Magique · Application ludo-éducative 2D autonome (HTML5, Tailwind, Web Audio API)
+  </footer>
+
+  <!-- Scripts JavaScript complets intégrés -->
+  <script>
+    // --- Données Biologiques de la Métamorphose ---
+    const STAGES = [
+      {
+        id: 1,
+        name: "Les Œufs Translucides",
+        scientific: "Oviposition & Morula",
+        duration: "6 à 21 jours",
+        habitat: "Sous l'eau, accrochés aux herbiers",
+        respiration: "Diffusion cutanée à travers la gélatine",
+        diet: "Réserves vitellines internes",
+        desc: "La femelle dépose des centaines d'œufs regroupés en grappes protectrices. La gangue gélatineuse gonfle dans l'eau pour faire barrière aux prédateurs et retenir la chaleur solaire.",
+        secret: "La couche de gélatine transparente agit comme une véritable mini-serre solaire qui réchauffe l'embryon et accélère l'éclosion !"
+      },
+      {
+        id: 2,
+        name: "Le Jeune Têtard Nageur",
+        scientific: "Larve anoure branchiale",
+        duration: "4 à 6 semaines",
+        habitat: "Herbiers aquatiques sous-marins",
+        respiration: "Branchies externes en panache, puis internes",
+        diet: "Micro-algues et diatomées (herbivore)",
+        desc: "À l'éclosion, le têtard nage avec sa longue queue motrice. Il broute les végétaux aquatiques grâce à son petit bec corné et respire comme un poisson.",
+        secret: "Son intestin est extrêmement long et enroulé en spirale pour digérer efficacement les fibres végétales !"
+      },
+      {
+        id: 3,
+        name: "Le Têtard à Pattes",
+        scientific: "Métamorphose intermédiaire",
+        duration: "6 à 9 semaines",
+        habitat: "Eaux calmes de mi-profondeur",
+        respiration: "Début des poumons & branchies",
+        diet: "Algues et petits débris d'invertébrés",
+        desc: "Deux puissantes pattes arrière émergent d'abord, suivies par les pattes avant dissimulées sous la peau. Les poumons se forment et le têtard commence à gober l'air.",
+        secret: "Les pattes arrière sortent toujours en premier à la base de la queue pour propulser le têtard !"
+      },
+      {
+        id: 4,
+        name: "La Jeune Grenouillette",
+        scientific: "Subadulte imago",
+        duration: "10 à 14 semaines",
+        habitat: "Rochers moussus et berges humides",
+        respiration: "Pulmonaire et par la peau (cutanée)",
+        diet: "Petits insectes et pucerons d'eau (carnivore)",
+        desc: "La jeune grenette quitte pour la première fois le milieu aquatique. Sa queue n'est pas perdue : elle est résorbée de l'intérieur par le métabolisme.",
+        secret: "La résorption de la queue fournit toute l'énergie nécessaire à la grenouillette le temps que sa bouche s'adapte à la chasse des insectes !"
+      },
+      {
+        id: 5,
+        name: "La Grenouille Adulte",
+        scientific: "Anura (Ranidae)",
+        duration: "Plusieurs années (5 à 12 ans)",
+        habitat: "Grands nénuphars, étangs calmes et lisières",
+        respiration: "Poumons & peau continuellement humide",
+        diet: "Chasseresse carnivore (mouches, libellules, vers)",
+        desc: "Reine incontestée de l'étang sous le clair de lune, la grenouille adulte saute sur ses puissantes pattes palmées et fait retentir son chant nuptial.",
+        secret: "Une grenouille peut boire de l'eau directement par la peau perméable de son ventre sans jamais ouvrir la bouche !"
+      }
+    ];
+
+    // --- Synthétiseur Sonore Web Audio API ---
+    let audioCtx = null;
+    let ambienceTimer = null;
+    let isAudioOn = false;
+
+    function getAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playDrop() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = ctx.currentTime;
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.exponentialRampToValueAtTime(1400, t + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(400, t + 0.16);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      } catch (e) {}
+    }
+
+    function playCroak() {
+      try {
+        const ctx = getAudio();
+        const t = ctx.currentTime;
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        osc1.type = 'sawtooth';
+        osc2.type = 'square';
+        osc1.frequency.setValueAtTime(120, t);
+        osc1.frequency.linearRampToValueAtTime(95, t + 0.14);
+        osc2.frequency.setValueAtTime(160, t);
+        osc2.frequency.linearRampToValueAtTime(130, t + 0.14);
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(450, t);
+        filter.Q.setValueAtTime(4.0, t);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.005, t + 0.28);
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc1.start(t);
+        osc2.start(t);
+        osc1.stop(t + 0.3);
+        osc2.stop(t + 0.3);
+      } catch (e) {}
+    }
+
+    function playChime() {
+      try {
+        const ctx = getAudio();
+        const t = ctx.currentTime;
+        [1046.5, 1318.5, 1567.98, 2093.0].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t + i * 0.06);
+          gain.gain.setValueAtTime(0.08, t + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t + i * 0.06);
+          osc.stop(t + i * 0.06 + 0.45);
+        });
+      } catch (e) {}
+    }
+
+    function toggleAmbience() {
+      isAudioOn = !isAudioOn;
+      const btn = document.getElementById('audioToggleBtn');
+      const text = document.getElementById('audioText');
+      const icon = document.getElementById('audioIcon');
+
+      if (isAudioOn) {
+        btn.classList.add('active');
+        text.innerText = "Ambiance Active";
+        icon.innerText = "🔊";
+        playChime();
+        ambienceTimer = setInterval(() => {
+          if (!isAudioOn) return;
+          const r = Math.random();
+          if (r < 0.4) playDrop();
+          else if (r < 0.75) playCroak();
+          else playChime();
+        }, 4000);
+      } else {
+        btn.classList.remove('active');
+        text.innerText = "Ambiance Silencieuse";
+        icon.innerText = "🔈";
+        if (ambienceTimer) clearInterval(ambienceTimer);
+      }
+    }
+
+    // --- Navigation par Onglets ---
+    function switchTab(tab) {
+      playDrop();
+      ['pond', 'cycle', 'puzzle', 'quiz'].forEach(t => {
+        document.getElementById('view-' + t).style.display = (t === tab) ? 'block' : 'none';
+        const navBtn = document.getElementById('nav-' + t);
+        if (navBtn) {
+          if (t === tab) navBtn.classList.add('active');
+          else navBtn.classList.remove('active');
+        }
+      });
+      if (tab === 'cycle') renderCycleCards();
+      if (tab === 'puzzle') initPuzzleGame();
+      if (tab === 'quiz') initQuiz();
+    }
+
+    // --- Gestion de la Modale d'Étape ---
+    function openStageModal(stageId) {
+      const stage = STAGES.find(s => s.id === stageId);
+      if (!stage) return;
+      if (stageId === 5) playCroak();
+      else playDrop();
+
+      document.getElementById('modalTitle').innerText = stage.name;
+      document.getElementById('modalScientific').innerText = stage.scientific;
+      document.getElementById('modalDesc').innerText = stage.desc;
+      document.getElementById('modalDuration').innerText = stage.duration;
+      document.getElementById('modalHabitat').innerText = stage.habitat;
+      document.getElementById('modalResp').innerText = stage.respiration;
+      document.getElementById('modalDiet').innerText = stage.diet;
+      document.getElementById('modalSecret').innerText = stage.secret;
+
+      document.getElementById('stageModal').classList.add('open');
+    }
+
+    function closeStageModal(e) {
+      document.getElementById('stageModal').classList.remove('open');
+    }
+
+    // --- Filtres de Zone ---
+    function setZoneFilter(zone) {
+      playDrop();
+      ['all', 'underwater', 'surface'].forEach(z => {
+        const btn = document.getElementById('filter-' + z);
+        if (z === zone) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+
+      const pin1 = document.getElementById('pin-1');
+      const pin2 = document.getElementById('pin-2');
+      const pin3 = document.getElementById('pin-3');
+      const pin4 = document.getElementById('pin-4');
+      const pin5 = document.getElementById('pin-5');
+
+      if (zone === 'all') {
+        [pin1, pin2, pin3, pin4, pin5].forEach(p => p.style.display = 'block');
+      } else if (zone === 'underwater') {
+        [pin1, pin2, pin3].forEach(p => p.style.display = 'block');
+        [pin4, pin5].forEach(p => p.style.display = 'none');
+      } else {
+        [pin1, pin2, pin3].forEach(p => p.style.display = 'none');
+        [pin4, pin5].forEach(p => p.style.display = 'block');
+      }
+    }
+
+    // --- Mode Observateur ---
+    let observationMode = false;
+    function toggleObservationMode() {
+      observationMode = !observationMode;
+      const btn = document.getElementById('obsModeBtn');
+      if (observationMode) {
+        btn.classList.add('active');
+        btn.innerText = "🔍 Mode Observateur Actif";
+        alert("Mode Observateur : Clique sur l'étang pour explorer les secrets (les œufs à gauche, les têtards au centre, la grenouille sur le nénuphar !)");
+      } else {
+        btn.classList.remove('active');
+        btn.innerText = "🔍 Mode Observateur";
+      }
+    }
+
+    function handlePondClick(e) {
+      if (!observationMode) return;
+      playChime();
+    }
+
+    // --- Rendu des Cartes du Cycle (Vue 2) ---
+    function renderCycleCards() {
+      const container = document.getElementById('cycleCardsContainer');
+      container.innerHTML = STAGES.map(s => `
+        <div style="background: #020617; border: 1px solid #1e293b; border-radius: 0.85rem; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#34d399'" onmouseout="this.style.borderColor='#1e293b'" onclick="openStageModal(${s.id})">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: #6ee7b7; font-size: 1.05rem;">Étape ${s.id} : ${s.name}</strong>
+            <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">${s.duration}</span>
+          </div>
+          <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5;">${s.desc}</p>
+          <div style="font-size: 0.78rem; color: #94a3b8; display: flex; gap: 1.25rem; margin-top: 0.25rem;">
+            <span>🫁 <strong>Respiration :</strong> ${s.respiration}</span>
+            <span>🍽️ <strong>Alimentation :</strong> ${s.diet}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- Puzzle de Chronologie (Vue 3) ---
+    let puzzleState = [];
+    let selectedSlot = null;
+
+    function initPuzzleGame() {
+      puzzleState = [...STAGES].sort(() => Math.random() - 0.5);
+      selectedSlot = null;
+      document.getElementById('puzzleMessage').innerHTML = "";
+      renderPuzzle();
+    }
+
+    function renderPuzzle() {
+      const container = document.getElementById('puzzleSlots');
+      container.innerHTML = puzzleState.map((stage, idx) => `
+        <div class="game-card ${selectedSlot === idx ? 'selected' : ''}" onclick="clickPuzzleCard(${idx})">
+          <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 700;">Emplacement ${idx + 1}</div>
+          <strong style="display: block; font-size: 0.9rem; color: #f8fafc; margin-bottom: 0.25rem;">${stage.name}</strong>
+          <span style="font-size: 0.78rem; color: #34d399;">${stage.respiration.split(' ')[0]}</span>
+        </div>
+      `).join('');
+    }
+
+    function clickPuzzleCard(idx) {
+      playDrop();
+      if (selectedSlot === null) {
+        selectedSlot = idx;
+      } else {
+        const temp = puzzleState[selectedSlot];
+        puzzleState[selectedSlot] = puzzleState[idx];
+        puzzleState[idx] = temp;
+        selectedSlot = null;
+      }
+      renderPuzzle();
+    }
+
+    function verifyPuzzle() {
+      const isCorrect = puzzleState.every((s, idx) => s.id === idx + 1);
+      const msg = document.getElementById('puzzleMessage');
+      if (isCorrect) {
+        playChime();
+        msg.innerHTML = "<span style='color: #34d399; font-weight: 700;'>🎉 Bravo ! Tu as parfaitement ordonné les 5 étapes du cycle de la grenouille !</span>";
+      } else {
+        playDrop();
+        msg.innerHTML = "<span style='color: #f59e0b; font-weight: 600;'>Certaines étapes ne sont pas encore à leur place. Vérifie bien l'ordre des métamorphoses !</span>";
+      }
+    }
+
+    // --- Quiz du Naturaliste (Vue 4) ---
+    const QUIZ_DATA = [
+      {
+        q: "Comment respire le jeune têtard dès son éclosion ?",
+        opts: ["Par des branchies qui captent l'oxygène dissous dans l'eau", "Avec des poumons comme les mammifères", "En retenant sa respiration", "Par le bout de sa queue"],
+        correct: 0,
+        exp: "Le têtard possède des branchies (d'abord externes puis internes) pour respirer sous l'eau avant de développer des poumons !"
+      },
+      {
+        q: "Que devient la queue du têtard lors de la métamorphose en grenouillette ?",
+        opts: ["Elle tombe et se détache au fond de l'eau", "Elle est résorbée de l'intérieur et sert d'énergie nutritive", "Elle se transforme en cinquième patte", "Elle sèche au soleil"],
+        correct: 1,
+        exp: "La queue est réabsorbée par autophagie cellulaire : elle nourrit le corps pendant la transformation de la bouche !"
+      },
+      {
+        q: "Quelles pattes apparaissent en premier chez le têtard en développement ?",
+        opts: ["Les pattes arrière", "Les pattes avant", "Les 4 pattes en même temps", "Les petites palmes de la queue"],
+        correct: 0,
+        exp: "Les pattes arrière émergent en premier à la base de la queue pour commencer à propulser le têtard !"
+      },
+      {
+        q: "Quel changement d'alimentation s'opère durant la métamorphose ?",
+        opts: ["Le têtard végétarien (algues) devient une grenouille carnivore (insectes)", "Le têtard carnivore devient herbivore", "La grenouille ne se nourrit que d'eau", "Ils ne mangent que des graines"],
+        correct: 0,
+        exp: "Le têtard broute les algues microscopiques, puis son système digestif se raccourcit pour digérer des insectes !"
+      },
+      {
+        q: "À quoi sert la gelée transparente autour des œufs ?",
+        opts: ["À faire barrière aux prédateurs et réchauffer l'embryon au soleil", "À faire voler les œufs dans l'air", "À fabriquer de la sève pour les arbres", "À cacher les œufs dans la boue"],
+        correct: 0,
+        exp: "La gélatine gonfle dans l'eau, amortit les chocs et crée un mini effet de serre thermique qui accélère l'éclosion !"
+      }
+    ];
+
+    let quizIdx = 0;
+    let quizScore = 0;
+
+    function initQuiz() {
+      quizIdx = 0;
+      quizScore = 0;
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      const container = document.getElementById('quizContainer');
+      if (quizIdx >= QUIZ_DATA.length) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem 0;">
+            <h3 style="color: #34d399; font-size: 1.6rem; margin-bottom: 0.5rem; font-weight: 800;">Quiz Terminé !</h3>
+            <p style="color: #cbd5e1; margin-bottom: 1.25rem; font-size: 1rem;">Tu as obtenu <strong>${quizScore} / ${QUIZ_DATA.length}</strong> bonnes réponses.</p>
+            <button class="tool-btn" style="background: #059669; color: #fff; font-weight: 700; padding: 0.6rem 1.25rem;" onclick="initQuiz()">Recommencer le Quiz</button>
+          </div>
+        `;
+        return;
+      }
+      const item = QUIZ_DATA[quizIdx];
+      container.innerHTML = `
+        <div style="margin-bottom: 1.25rem;">
+          <span style="font-size: 0.78rem; color: #34d399; font-weight: 700; text-transform: uppercase;">Question ${quizIdx + 1} sur ${QUIZ_DATA.length}</span>
+          <h3 style="font-size: 1.15rem; color: #f8fafc; margin-top: 0.35rem; font-weight: 700;">${item.q}</h3>
+        </div>
+        <div class="quiz-options">
+          ${item.opts.map((opt, i) => `
+            <button class="quiz-btn" onclick="answerQuiz(${i})">${opt}</button>
+          `).join('')}
+        </div>
+        <div id="quizFeedback" style="font-size: 0.9rem; margin-top: 1rem;"></div>
+      `;
+    }
+
+    function answerQuiz(optIdx) {
+      const item = QUIZ_DATA[quizIdx];
+      const fb = document.getElementById('quizFeedback');
+      if (optIdx === item.correct) {
+        playChime();
+        quizScore++;
+        fb.innerHTML = `<span style="color: #34d399; font-weight: 700;">✅ Bravo ! ${item.exp}</span>`;
+      } else {
+        playDrop();
+        fb.innerHTML = `<span style="color: #ef4444; font-weight: 700;">❌ Mauvaise réponse. La bonne réponse était : ${item.opts[item.correct]}. ${item.exp}</span>`;
+      }
+      setTimeout(() => {
+        quizIdx++;
+        renderQuizQuestion();
+      }, 2600);
+    }
+  </script>
+</body>
+</html>

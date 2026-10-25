@@ -1,0 +1,6 @@
+{
+  "name": "L'Étang Magique : Le Cycle de la Grenouille",
+  "description": "Jeu ludo-éducatif 2D interactif explorant la métamorphose complète de la grenouille dans un étang nocturne féerique.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
